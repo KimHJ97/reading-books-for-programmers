@@ -8,21 +8,29 @@
  - [프로젝트 코드 링크](https://github.com/joshua1988/learn-typescript)
  - [프로젝트 코드 링크](https://github.com/gitbutITbook/080316)
 
+<br/>
+
 ---
 ## 4.2 프로젝트 폴더 구조
 
-<center> 
+<p align="center">
   <img src="./images/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%EA%B5%AC%EC%A1%B0.PNG" alt="프로젝트 구조" />
-</center>
+</p>
+
+<br/>
 
 ### 4.2.1 node_modules 폴더
 
 node_modules 폴더에는 실습에 필요한 라이브러리가 설치된다.  
 npm i 명령어를 입력해서 필요한 라이브러리를 설치하는데, 정상적으로 설치가 종료되면 node_modules 폴더가 생성된다.
 
+<br/>
+
 ### 4.2.2 src 폴더
 
 소스 폴더로 타입스크립트 파일을 작성한다.
+
+<br/>
 
 ### 4.2.3 .slintrc.js 파일
 
@@ -30,6 +38,8 @@ npm i 명령어를 입력해서 필요한 라이브러리를 설치하는데, �
 ESLint란 자바스크립트의 문법 검사 도구를 의미한다.  
 자바스크립트 코드를 일관된 형식으로 작성할 수 있게 도와주고 잠재적인 에러가 발생할 수 있는 코드에 경고를 해준다.  
 또한, ESLint는 자바스크립트뿐만 아니라 추가적인 구성으로 타입스크립트 코드까지 검사할 수 있다.
+
+<br/>
 
 ### 4.2.4 package.json
 
@@ -72,11 +82,15 @@ NPM 설정 파일은 프로젝트 이름, 버전, 라이선스 등 프로젝트�
 }
 ```
 
+<br/>
+
 ### 4.2.5 package-lock.json 파일
 
 package-lock.json 파일은 dependencies나 devDependencies에 명시된 라이브러리를 설치할 때 필요한 부수 라이브러리의 버전을 관리한다.  
 package.json 파일에 명시된 라이브러리를 설치하고 나면 자동으로 생성된다.
  - 개발자가 직접 package-lock.json 파일의 내용을 수정하지 않는다.
+
+<br/>
 
 ### 4.2.6 tsconfig.json 파일
 
@@ -99,6 +113,8 @@ tsconfig.json 파일은 타입스크립트 설정 파일이다.
 }
 
 ```
+
+<br/>
 
 ---
 ## 4.3 프로젝트 
