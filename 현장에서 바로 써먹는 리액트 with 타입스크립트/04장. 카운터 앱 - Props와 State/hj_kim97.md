@@ -73,7 +73,7 @@ module.exports = {
   },
   ..
   rules: {
-    "react/react-in-jsc-scope": "off",
+    "react/react-in-jsx-scope": "off",
   },
 };
 ```
