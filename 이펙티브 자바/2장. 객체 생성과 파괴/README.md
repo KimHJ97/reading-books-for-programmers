@@ -436,3 +436,56 @@ __다 쓴 참조를 해제하는 가장 좋은 방법은 그 참조를 담은 �
 
 ## 아이템 8. finalizer와 cleaner 사용을 피하라
 
+자바에서는 두 가지 객체 소멸자를 제공한다.  
+그중 finalizer는 예측할 수 없고, 상황에 따라 위험하 수 있어 일반적으로 불필요하다.  
+자바 9에서는 finalizer를 사용 자제(deprecated) API로 지정하고 cleaner를 그 대안으로 소개했다.  
+cleaner는 finalizer보다는 덜 위험하지만, 여전히 예측할 수 없고, 느리고, 일반적으로 불필요하다.  
+finalizer와 cleaner는 즉시 수행된다는 보장이 없다.  
+ - finalizer와 cleaner는 안전망 역할이나 중요하지 않은 네이티브 자원 회수용으로만 사용하자. 물론 이런 경우라도 불확실성과 성능 저하에 주의해야 한다.
+
+<br/>
+
+## 아이템 9. try-finally보다는 try-with-resource를 사용하라
+
+자바에서 네트워크 API, 파일 입출력 API 등 I/O 작업이 필요한 객체는 GC의 대상이 되지 않는다.  
+GC의 대상은 보통 힙 메모리에 존재하는 객체를 대상으로 한다.  
+쉽게, Closeable 인터페이스 상속받은 클래스들은 개발자들이 직접 닫아주어야 한다. (ex: InputStream, OutputStream, java.sql.Connection 등)  
+
+ - try-finally
+    - 
+```Java
+static String firstLineOfFile(String path) throws IOException {
+    BufferedReader br = new BufferedReader(new FileReeader(path));
+    try {
+        return br.readLine();
+    } finally {
+        br.close();
+    }
+}
+```
+
+ - try-with-resource
+    - JDK 7버전부터 try-with-resources 구문을 제공한다. 이 구조를 사용하기 위해서는 해당 자원이 AutoCloseable 인터페이스를 구현해야한다.
+```Java
+static String firstLineOfFile(String path) throws IOException {
+    try (
+        BufferedReader br = new BufferedReader(new FileReader(path))
+    ) {
+        return br.readLine();
+    }
+}
+
+// 복수의 자원 처리시
+static void copy(String src, String dst) throws IOException {
+    try (
+        InputStream in = new FileInputStream(src);
+        OutputStream out = new FileOutputStream(dst);
+    ) {
+        byte[] buf = new byte[BUFFER_SIZE];
+        int n;
+        while ((n = in.read(buf)) >= 0) {
+            out.write(buf, 0, n);
+        }
+    }
+}
+```
