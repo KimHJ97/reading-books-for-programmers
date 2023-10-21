@@ -274,6 +274,25 @@ public class AuthController {
 }
 ```
 
+ - ProjectConfig
+```Java
+@Configuration
+public class ProjectConfig extends WebSecurityConfigurerAdapter {
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.csrf().disable();
+        http.authorizeRequests()
+                .anyRequest().permitAll();
+    }
+}
+```
+
  - HTTP 요청 테스트
 ```Bash
 # /user/add: 사용자 생성
