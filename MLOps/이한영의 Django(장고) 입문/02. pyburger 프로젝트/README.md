@@ -394,7 +394,7 @@ def burger_search(request):
  - urls.py
     - 엔드포인트와 함수 매칭
 ```py
-from django.contrib import admin
+from django.contrib im1rt admin
 from django.urls import path
 from config.views import hello, burger_list, burger_search
 
