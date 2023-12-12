@@ -185,6 +185,7 @@ model.score(X_train, y_train)
 
 ### 학습 마무리
 
+ - `전체 코드`
 ```python
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
@@ -225,3 +226,24 @@ mean_squared_error(y_test, pred, squared = False)
 model.score(X_train, y_train)
 
 ```
+
+<br/>
+
+ - `관련 모델`
+   - 릿지 회귀
+      - 패키지: from sklearn.linear_model import Ridge
+      - 선형 회귀 모델에 L2 정규화를 적용한 모델로 오버 피팅을 억제하는 효과가 있다.
+   - 라쏘 회귀
+      - 패키지: from sklearn.linear_model import Lasso
+      - 선형 회귀 모델에 L1 정규화를 적용한 모델로 피치 셀렉션 및 오버피팅을 억제하는 효과가 있다.
+   - 엘라스틱 넷
+      - 패키지: from sklearn.linear_model import ElasticNet
+      - 릿지 회귀와 라쏘 회귀의 단점을 절충시킨 모델이다.
+
+<br/>
+
+ - `핵심 용어`
+   - 선형 회귀: 독립변수와 종속변수 간의 선형 관계를 전제로 한 모델
+   - 사분위수: 데이터를 오름차순으로 정리했을 때 25%, 50%, 75% 위치에서 확인한 값
+   - 오버피팅: 모델이 학습셋에 지나치게 잘 맞도록 학습되어서 새로운 데이터에 대한 예측력이 떨어지는 현상
+
