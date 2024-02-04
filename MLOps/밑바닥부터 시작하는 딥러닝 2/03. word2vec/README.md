@@ -150,3 +150,249 @@ word2vec 에서는 '입력 측의 가중치만 이용한다.'가 가장 대중�
 
 <br/>
 
+## 3. 학습 데이터 준비
+
+### 맥락과 타깃
+
+word2vec에서 이용하는 신경망의 입력은 맥락이 된다. 그리고 그 정답 레이블은 맥락에 둘러싸인 중앙의 단어, 즉 타깃이 된다.  
+
+<div align="center">
+    <img src="./images/word2vec_data_1.PNG">
+</div>
+<br/>
+
+
+ - `맥락과 타깃을 만드는 함수`
+    - 단어 ID의 배열(corpus)와 맥락의 윈도우 크기(window_size)를 매개변수로 받는다.
+    - 맥락과 타깃을 각각 넘파이 다차원 배열로 반환한다.
+```python
+def create_contexts_target(corpus, window_size=1):
+    '''맥락과 타깃 생성
+
+    :param corpus: 말뭉치(단어 ID 목록)
+    :param window_size: 윈도우 크기(윈도우 크기가 1이면 타깃 단어 좌우 한 단어씩이 맥락에 포함)
+    :return:
+    '''
+    target = corpus[window_size:-window_size]
+    contexts = []
+
+    for idx in range(window_size, len(corpus)-window_size):
+        cs = []
+        for t in range(-window_size, window_size + 1):
+            if t == 0:
+                continue
+            cs.append(corpus[idx + t])
+        contexts.append(cs)
+
+    return np.array(contexts), np.array(target)
+
+
+import sys
+sys.path.append('..')
+from common.util import preprocess
+
+text = 'You say goodbye and I say hello.'
+corpus, word_to_id, id_to_word = preprocess(text)
+print(corpus) # [0 1 2 3 4 1 5 6]
+
+contexts, target = create_contexts_target(corpus, window_size=1)
+print(contexts)
+# [[0 2]]
+#  [1 3]
+#  [2 4]
+#  [3 1]
+#  [4 5]
+#  [1 6]]
+
+print(target)
+# [1 2 3 4 1 5]
+```
+
+<br/>
+
+### 원핫 표현으로 변환
+
+맥락과 타깃을 단어 ID에서 원핫 표현으로 변환한다.  
+
+<div align="center">
+    <img src="./images/word2vec_data_2.PNG">
+</div>
+<br/>
+
+```python
+def convert_one_hot(corpus, vocab_size):
+    '''원핫 표현으로 변환
+
+    :param corpus: 단어 ID 목록(1차원 또는 2차원 넘파이 배열)
+    :param vocab_size: 어휘 수
+    :return: 원핫 표현(2차원 또는 3차원 넘파이 배열)
+    '''
+    N = corpus.shape[0]
+
+    if corpus.ndim == 1:
+        one_hot = np.zeros((N, vocab_size), dtype=np.int32)
+        for idx, word_id in enumerate(corpus):
+            one_hot[idx, word_id] = 1
+
+    elif corpus.ndim == 2:
+        C = corpus.shape[1]
+        one_hot = np.zeros((N, C, vocab_size), dtype=np.int32)
+        for idx_0, word_ids in enumerate(corpus):
+            for idx_1, word_id in enumerate(word_ids):
+                one_hot[idx_0, idx_1, word_id] = 1
+
+    return one_hot
+
+import sys
+sys.path.append('..')
+from common.util preprocess, create_contexts_target, convert_one_hot
+
+text = 'You say goodbye and I say hello.'
+corpus, word_to_id, id_to_word = preprocess(text)
+
+contexts, target = create_contexts_target(corpus, window_size=1)
+
+vocab_size = len(word_to_id)
+target = convert_one_hot(target, vocab_size) # 원핫 표현 변환
+contexts = convert_one_hot(contexts, vocab_size) # 원핫 표현 변환
+```
+
+<br/>
+
+## 4. CBOW 모델 구현
+
+ - `simple_cbow.py`
+```python
+# coding: utf-8
+import sys
+sys.path.append('..')
+import numpy as np
+from common.layers import MatMul, SoftmaxWithLoss
+
+
+class SimpleCBOW:
+    def __init__(self, vocab_size, hidden_size):
+        V, H = vocab_size, hidden_size
+
+        # 가중치 초기화
+        W_in = 0.01 * np.random.randn(V, H).astype('f')
+        W_out = 0.01 * np.random.randn(H, V).astype('f')
+
+        # 계층 생성
+        self.in_layer0 = MatMul(W_in)
+        self.in_layer1 = MatMul(W_in)
+        self.out_layer = MatMul(W_out)
+        self.loss_layer = SoftmaxWithLoss()
+
+        # 모든 가중치와 기울기를 리스트에 모은다.
+        layers = [self.in_layer0, self.in_layer1, self.out_layer]
+        self.params, self.grads = [], []
+        for layer in layers:
+            self.params += layer.params
+            self.grads += layer.grads
+
+        # 인스턴스 변수에 단어의 분산 표현을 저장한다.
+        self.word_vecs = W_in
+
+    # 인수로 맥락과 타깃을 받아 손실을 반환한다.
+    def forward(self, contexts, target):
+        h0 = self.in_layer0.forward(contexts[:, 0])
+        h1 = self.in_layer1.forward(contexts[:, 1])
+        h = (h0 + h1) * 0.5
+        score = self.out_layer.forward(h)
+        loss = self.loss_layer.forward(score, target)
+        return loss
+
+    def backward(self, dout=1):
+        ds = self.loss_layer.backward(dout)
+        da = self.out_layer.backward(ds)
+        da *= 0.5
+        self.in_layer1.backward(da)
+        self.in_layer0.backward(da)
+        return None
+```
+
+<br/>
+
+### 학습 코드 구현
+
+학습 데이터를 준비해 신경망에 입력한 다음, 기울기를 구하고 가중치 매개변수를 순서대로 갱신한다.  
+
+ - 
+```python
+import sys
+sys.path.append('..')  # 부모 디렉터리의 파일을 가져올 수 있도록 설정
+from common.trainer import Trainer
+from common.optimizer import Adam
+from simple_cbow import SimpleCBOW
+from common.util import preprocess, create_contexts_target, convert_one_hot
+
+
+window_size = 1
+hidden_size = 5
+batch_size = 3
+max_epoch = 1000
+
+text = 'You say goodbye and I say hello.'
+corpus, word_to_id, id_to_word = preprocess(text)
+
+vocab_size = len(word_to_id)
+contexts, target = create_contexts_target(corpus, window_size)
+target = convert_one_hot(target, vocab_size)
+contexts = convert_one_hot(contexts, vocab_size)
+
+model = SimpleCBOW(vocab_size, hidden_size)
+optimizer = Adam()
+trainer = Trainer(model, optimizer)
+
+trainer.fit(contexts, target, max_epoch, batch_size)
+trainer.plot()
+
+word_vecs = model.word_vecs
+for word_id, word in id_to_word.items():
+    print(word, word_vecs[word_id])
+```
+
+<br/>
+
+## word2vec 보충
+
+### skip-gram 모델
+
+skip-gram은 CBOW에서 다루는 맥락과 타깃을 역전시킨 모델이다.  
+CBOW 모델은 맥락이 여러 개 있고, 그 여러 맥락으로부터 중앙의 단어(타깃)를 추측한다.  
+skip-gram 모델은 중앙의 단어(타깃)로부터 주변의 여러 단어(맥락)을 추측한다.  
+
+<div align="center">
+    <img src="./images/skip-gram_1.PNG"><br/>
+    <img src="./images/skip-gram_2.PNG">
+</div>
+<br/>
+
+skip-gram 모델의 입력층은 하나이고, 출력층은 맥락의 수만큼 존재한다.  
+따라서, 각 출력층에서는 Softmax with Loss 계층 등을 이용해 개별적으로 손실을 구하고, 이 개별 손실들을 모두 더한 값을 최종 손실로 한다.  
+
+단어 분산 표현의 정밀도 면에서 skip-gram 모델이 CBOW 모델보다 결과가 더 좋은 경우가 많다. 특히 말뭉치가 커질수록 저빈도 단어나 유추 문제의 성능 면에서 skip-gram 모델이 더 뛰어난 경향이 있다. 반면, 학습 속도 면에서는 CBOW 모델이 더 빠르다. skip-gram 모델은 손실을 맥락의 수만큼 구해야 해서 계산 비용이 그만큼 커지게 된다.  
+
+<br/>
+
+### 통계 기반 vs 추론 기반
+
+통계 기반 기법은 말뭉치의 전체 통계로부터 1회 학습하여 단어의 분산 표현을 얻는다. 추론 기반 기법에서는 말뭉치를 일부분씩 여러 번 보면서 학습한다.  
+
+만약, 어휘에 추가할 새 단어가 생겨 단어의 분산 표현을 갱신해야 하는 상황이 있다면, 통계 기반 기법에서는 계산을 처음부터 다시 해야 한다. (동시발생 행렬을 다시 만들고, SVD 수행 등 일련의 작업 수행) 반면, 추론 기반 기법은 매개변수를 다시 학습할 수 있다. 즉, 학습한 가중치를 초깃값으로 사용해 다시 학습하면 되는데 이런 특성으로 학습한ㄱ ㅕㅇ험을 해치지 않으면서 단어의 분산 표현을 효율적으로 갱신할 수 있다.  
+
+단어의 분산 표현의 성격이나 정밀도 면에서 통계 기반 기법은 주로 단어의 유사성이 인코딩된다. 한편, word2vec 에서는 단어의 유사성은 물론, 한층 복잡한 단어 사이의 패턴까지 파악되어 인코딩된다. 이런 이유로 추론 기반 기법이 통계 기반 기법보다 정확하다고 생각되지만, 실제로 유사성을 평가하면 우열을 가릴 수 없다고 한다.  
+
+<br/>
+
+## 정리
+
+ - 추론 기반 기법은 추측하는 것이 목적이며, 그 부산물로 단어의 분산 표현을 얻을 수 있다.
+ - word2vec은 추론 기반 기법이며, 단순한 2층 신경망이다.
+ - word2vec은 skip-gram 모델과 CBOW 모델을 제공한다.
+ - CBOW 모델은 여러 단어(맥락)로부터 하나의 단어(타깃)를 추측한다.
+ - skip-gram 모델은 하나의 단어(타깃)로부터 다수의 단어(맥락)를 추측한다.
+ - word2vec은 가중치를 다시 학습할 수 있으므로, 단어의 분산 표현 갱신이나 새로운 단어 추가를 효율적으로 수행할 수 있다.
+
+
