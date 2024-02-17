@@ -194,6 +194,7 @@ mysql> ALTER USER 'root'@'localhost' DISCARD OLD PASSWORD;
 
 MySQL 5.7 버전까지 권한은 글로벌 권한과 객체 단위의 권한으로 구분되었다.  
 MySQL 8.0 버전부터는 MySQL 5.7 버전의 구너한에 동적 권한이 더 추가되었다.  
+
  - __글로벌 권한__
     - FILE, CREATE ROLE, CREATE TABLESPACE, CREATE USER, DROP ROLE, PROCESS, PROXY, RELOAD, REPLICATION CLIENT, REPLICATION SLAVE, SHOW DATABASES, SHUTDOWN, SUPER, USAGE
  - __객체 권한__
@@ -215,5 +216,68 @@ GRANT SUPER ON *.* TO 'user'@'localhost';
 GRANT EVENT ON *.* TO 'user'@'localhost';
 GRANT EVENT ON employees.* TO 'user'@'localhost';
 
+-- 테이블 권한
+GRANT SELECT, INSERT, UPDATE, DELETE ON *.* TO 'user'@'localhost'; -- 서버 모든 DB에 대한 권한 부여
+GRANT SELECT, INSERT, UPDATE, DELETE ON employees.* TO 'user'@'localhost'; -- 특정 DB의 오브젝트
+GRANT SELECT, INSERT, UPDATE, DELETE ON employees.department TO 'user'@'localhost'; -- 특정 DB의 특정 테이블
+
+-- 테이블의 특정 컬럼 권한(컬럼 단위 권한)
+-- ※ 컬럼 단위의 접근 권한이 필요한 경우 GRANT 명령보다는 허용하고자 하는 컬럼만 별도의 뷰를 만들어 사용하는 방법도 있다.
+-- ※ 뷰도 하나의 테이블로 인식되어 뷰를 만들어 두면 뷰의 컬럼에 대해 권한을 체크하지 않고 뷰 자체에 대한 권한만 체크한다.
+GRANT SELECT, INSERT, UPDATE(dept_name) ON employees.department TO 'user'@'localhost';
+```
+
+<br/>
+
+ - `DB 권한 테이블`
+   - 각 계정이나 권한에 부여된 권한이나 역할을 확인하기 위해서는 SHOW GRANTS 명령을 사용할 수도 있지만, MySQL DB 관련 테이블을 통해 표 형태로 확인할 수 있다.
+```
+★ 정적 권한
+ - mysql.user: 계정 정보&계정이나 역할에 부여된 글로벌 권한
+ - mysql.db: 계쩡이나 역할에 DB 단위로 부여된 권한
+ - mysql.tables_priv: 계정이나 역할에 테이블 단위로 부여된 권한
+ - mysql.columns_priv: 계정이나 역할에 컬럼 단위로 부여된 권한
+ - mysql.procs_priv: 계정이나 역할에 스토어드 프로그램 단위로 부여된 권한
+
+★ 동적 권한
+ - mysql.global_grants: 계정이나 역할에 부여되는 동적 글로벌 권한
+```
+
+<br/>
+
+## 5. 역할(Role)
+
+MySQL 8.0 버전부터는 권한을 묶어서 역할을 사용할 수 있다.  
+
+ - `예시`
+   - CREATE ROLE 명령어로 역할을 정의한다.
+   - GRANT 명령으로 각 역할에 대해 권한을 부여한다.
+   - GRANT 명령으로 만들어진 역할을 계정에 부여할 수 있다.
+   - 계정이 역할을 활성화하기 위해서는 SET ROLE 명령을 수행해야 한다.
+      - 기본적으로 MySQL 서버는 역할이 자동으로 비활성화되도록 설정되어 있다.
+      - 때문에, SET ROLE을 통해 역할을 활성화하더라도 재로그인하면 초기화가 된다.
+      - 시스템 변수(activate_all_roles_on_login)을 활성화하면 자동으로 활성화된다.
+   - __저장소 테이블__
+      - mysql.default_roles: 계정별 기본 역할
+      - mysql.role_edges: 역할에 부여된 역할 관계 그래프
+```sql
+-- 역할 정의
+CREATE ROLE role_emp_read, role_emp_write;
+
+-- 역할에 권한 부여
+GRANT SELECT ON employees.* TO role_emp_read;
+GRANT INSERT, UPDATE, DELETE ON employees.* TO role_emp_write;
+
+-- 계정 생성
+CREATE USER reader@'127.0.0.1' IDENTIFIED BY 'querty';
+CREATE USER writer@'127.0.0.1' IDENTIFIED BY 'querty';
+
+-- 계정에 역할 부여
+GRANT role_emp_read TO reader@'127.0.0.1';
+GRANT role_emp_read, role_emp_writer TO writer@'127.0.0.1';
+
+-- 역할 활성화
+SET ROLE 'role_emp_read';
+SET GLOBAL activate_all_roles_on_login=ON;
 ```
 
