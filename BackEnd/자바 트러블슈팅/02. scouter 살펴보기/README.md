@@ -354,3 +354,127 @@ hook_service_patterns=a.B.d
 <div align="center">
     <img src="./images/scouter_4.PNG">
 </div>
+
+## 3. scouter 클라이언트에서 제공하는 기능들
+
+scouter 서버에 저장되어 있는 메트릭 정보를 확인하기 위해서는 별도의 클라이언트를 사용해야 한다. 클라이언트 종류로는 설치형 클라이언트와 웹 클라이언트 2 가지가 제공된다. 설치형 scouter 클라이언트는 윈도우, 리눅스, 맥을 지원하며, 그 외에 OS 에서는 scouter paper라는 웹으로 접근하여 모니터링해야 한다.  
+
+### scouter 클라이언트 시작하기
+
+#### Objects 창 살펴보기
+
+Objects 창에서는 수집 서버들의 목록이 나열되며, 서버와 JVM 인스턴스를 확인할 수 있다.  
+
+ - 수집 서버 추가/삭제
+    - Objects 창 > 상단 메뉴 > 데스크톱 아이콘(Server Manager)
+ - 사용하지 않는 서버 제거
+    - Objects 창 > 상단 메뉴 > 화살표 아이콘 > Remove Inactive
+
+<div align="center">
+    <img src="./images/scouter_objects.PNG">
+</div>
+<br/>
+
+### scouter 상단 메뉴
+
+<div align="center">
+    <img src="./images/scouter_header_menu.PNG">
+</div>
+<br/>
+
+ - __File__
+    - 주요 기능: Export perspective settings, Import perspective settings
+    - 구성한 화면을 같이 일하는 동료가 똑같이 구성하고 싶어 하거나, 다른 동료가 구성한 화면을 복제해서 사용하고 싶을 때 사용된다.
+ - __Management__
+    - ObjectMap: 모든 수집 서버들과 서버, 인스턴스들의 관계를 시각적으로 보여준다.
+    - Alert: 모니터링 중인 서버에 발생한 알림들을 모아서 확인할 수 있다. 참고용으로만 사용한다. 만약, 서버의 상태가 안 좋은 경우 Alert 창 이용보다는 Alert 플러그인을 활용하여 사용 중인 메신저나 이메일로 알림을 받는 것을 추천한다.
+    - Group Navigation: 여러 수집 서버에 저장되어 있는 데이터를 모아서 볼 수 있다.
+
+<div align="center">
+    <img src="./images/scouter_objectmap.PNG">
+</div>
+<br/>
+
+ - __Collector__
+    - 각종 그래프를 추가하기 위한 메뉴와 통계, 설정 관리 등을 할 수 있다.
+<div align="center">
+    <img src="./images/scouter_collector_menu.PNG">
+</div>
+<br/>
+
+ - __Host__
+    - 호스트 에이전트를 설정하고, 에이전트에서 수집되는 정보의 그래프를 선택할 수 있다.
+    - Performance Counter: CPU, Disk, Memory, Swap, Network 등의 정보 제공
+    - Object Request: 환경 변수(Env), 프로세스 자원 사용 현황(Top), 디스크 사용량(Disk Usage)
+    - Configure: 현재 선택된 호스트 에이전트의 설정을 변경
+ - __Object__
+    - Host와 유사하지만, 대상이 서버가 아니라 인스턴스 중심이다.
+    - Performance Counter: Heap, GC 등을 확인 가능
+    - Object Request
+        - 해당 메뉴를 클릭할 경우 운영 중인 서버의 성능에 막대한 영향을 끼칠 수도 있다.
+        - System.GC와 Dump 글자가 포함된 메뉴를 웬만해서 누르지 않는 것이 좋다. (시스템이 순간적으로 정지할 수 있다.)
+ - __Window__
+    - 클라이언트 화면을 관리하기 위한 기능을 제공한다.
+    - Reset Perspective: 초기 화면 상태로 변경
+    -Preferences: 화면의 각종 값들을 변경 (사용할 일이 별로 없음)
+
+### 그래프 추가하기
+
+그래프를 추가하는 방법은 크게 2 가지로 나뉜다. 서버/인스턴스 하나만 모니터링하는 그래프를 추가하는 것과 수집 서버에서 모니터링되는 전체 서버/인스턴스를 모니터링하는 그래프를 추가하는 것이다.  
+
+ - 하나의 수집서버에서 모니터링되는 전체 서버/인스턴스 그래프 추가
+    - Collector 메뉴를 이용한다.
+    - 자바 데몬 프로그램 수집: Collector > Java
+    - 톰캣 애플리케이션 데몬 수집: Collector > Tomcat
+    - 서버 리소스 사용량 수집: Collector > OS
+ - 각각 하나의 서버/인스턴스 그래프 추가
+    - Host 혹은 Object 메뉴를 이용한다.
+
+<div align="center">
+    <img src="./images/scouter_header_menu_2.PNG">
+</div>
+<br/>
+
+### 필수 그래프 목록
+
+scouter에는 매우  많은 그래프가 존재한다. 모든 그래프를 추가하면은 원하는 정보를 한 눈에 찾기가 어렵다. 간편하게 서비스 현황을 확인하기 좋은 그래프를 배치한다.  
+
+ - __Tomcat/Java 필수 그래프 목록__
+    - GC Count
+        - Garbage Collection(가비지 컬렉션)이 몇 번 발생했는지를 나타내는 지표입니다. Java의 메모리 관리에서 불필요한 객체들을 수거하는 과정을 보여주며, 자주 발생하는 GC는 시스템 성능에 영향을 줄 수 있습니다.
+    - GC Time
+        - GC가 수행되는 데 걸린 총 시간을 나타냅니다. GC가 오래 걸릴수록 애플리케이션 성능에 부정적인 영향을 미칠 수 있습니다.
+    - Heap Used 혹은 Heap Memory
+        - JVM의 힙 메모리 사용량을 나타냅니다. 힙 메모리는 애플리케이션이 동적으로 할당하는 메모리 공간으로, 사용량이 많아지면 GC가 자주 발생할 수 있습니다.
+    - TPS
+        - 초당 처리되는 트랜잭션 수를 나타냅니다. 애플리케이션의 처리량을 확인할 수 있는 중요한 지표입니다.
+    - Active Service EQ
+        - 현재 실행 중인 요청들의 대기열 상태를 나타냅니다. 대기열이 길어지면 서버의 응답 시간이 지연될 수 있습니다.
+    - Active Speed
+        - 현재 처리 중인 요청들의 속도를 측정하는 지표입니다. 서비스의 응답 성능을 평가할 수 있습니다.
+    - XLog
+        - 성능에 대한 로그 데이터로, 애플리케이션의 요청에 대한 실행 시간을 기록하여 성능 문제를 추적할 수 있습니다.
+ - __서버 필수 그래프 목록__
+    - CPU (무조건 필수)
+        - 서버의 CPU 사용률을 나타냅니다. 높은 CPU 사용률은 성능 병목을 일으킬 수 있으며, 애플리케이션이 과도한 연산을 요구할 때 발생할 수 있습니다.
+    - Memory
+        - 서버의 메모리 사용량을 모니터링합니다. 메모리 부족은 서버의 성능 저하를 유발할 수 있습니다.
+    - Network TX Bytes/RX Bytes
+        - 서버에서 전송(TX) 및 수신(RX)된 네트워크 트래픽의 양을 보여줍니다. 네트워크 대역폭을 모니터링하고 트래픽 병목을 식별하는 데 유용합니다.
+    - Swap
+        - 서버가 메모리 부족 시 디스크의 스왑 공간을 사용하는지를 나타냅니다. 스왑 사용량이 많으면 서버 성능이 크게 저하될 수 있습니다.
+ - __상황별 추천 그래프__
+    - 성능 테스트: Network CLOSE_WAIT, TIME_WAIT
+    - 메모리가 부족한 장비: Memory 관련 그래프
+    - 성능이 아주 중요한 서비스: Swap 영역으로 메모리가 넘어가면 안되어, Swap 관련 항목
+
+### 화면 전환하기
+
+오른쪽 상단에 Perspective를 사용하여 커스텀한 화면 영역을 여러개 만들 수 있다. 하나의 화면에 보여지는 그래프의 종류와 내용은 다른 화면에 전혀 영향을 주지 않는다.  
+ - 주의점: 화면에 그래프를 추가하거나, 크기 조정 등 수정을 하였다면 반드시 그 화면을 저장해야 한다. 해당 Perspective 선택 후 Save As.. 클릭한 후, 동일한 이름으로 덮어쓰기 한다.
+
+<div align="center">
+    <img src="./images/scouter_perspective.PNG">
+</div>
+<br/>
+
