@@ -5,6 +5,8 @@
     - https://velog.io/@onestone/%EC%98%A4%ED%94%88%EC%86%8C%EC%8A%A4-APM-Scouter-%EC%84%A4%EC%B9%98-%EB%B0%8F-%EC%82%AC%EC%9A%A9%EB%B2%95
  - Scouter 다운로드
     - https://github.com/scouter-project/scouter/releases
+ - 실행 순서
+    - server > scouter.client > agent.host & agent.java
 
 ## Scouter 실행
 

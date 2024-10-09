@@ -478,3 +478,244 @@ scouter에는 매우  많은 그래프가 존재한다. 모든 그래프를 추�
 </div>
 <br/>
 
+## 4. scouter XLog
+
+XLog 화면에서 하나의 점은 하나의 요청을 의미한다. 이 점들이 어떻게 분포되어 있는지에 따라서 그 서비스가 안정적인지 불안정한 상태인지를 확인할 수 있다. Y 축은 응답 속도를 의미하기 때문에, 이러한 점들이 아래쪽에 있으면 해당 서비스는 매우 안정적인 상태로 볼 수 있다.  
+ - 사용자에게 응답을 완료하였을 때 점이 찍힌다.
+ - 상단에 cOUNT 값을 통해 최근 5분 동안의 요청 갯수를 확인할 수 있다.
+ - 그래프 내부를 드래그하면 해당 영역에 있는 요청 정보를 확인할 수 있다.
+    - Object: 해당 요청이 어떤 서버의 어떤 인스턴스에서 발생한 것인지
+    - Service: URL 확인
+    - Elapsed: 응답 속도
+    - CPU: CPU를 점유한 시간 (ms)
+    - SQL Count: SQL 수행 개수
+    - SQL Time: SQL 수행 시간 (ms)
+    - API Count: API 호출 개수
+    - API Time: API 수행 시간 (ms)
+    - KBytes: 요청을 처리하는 데 사용한 메모리 양 (kb)
+    - 해당 요청이 느린 이유가 CPU를 많이 사용해서인지, SQL 수행 시간이 오래 걸려서인지, API 호출 시간이 느려서인지를 한 눈에 확인할 수 있다.
+ - 가장 상단에 요청을 클릭하면 상세 정보를 확인할 수 있다.
+    - txid: 모든 요청들은 scouter에서 고유의 트랜잭션 아이디를 발급한다. 그 아이디를 통해서 다른 요청과 구분한다.
+    - thread: 요청을 수행한 스레드 이름
+    - ipaddr: WAS에 요청을 한 서버 IP, 앞 단에 웹 서버가 있다면 웹 서버의 IP가 이 값으로 설정된다.
+    - userid: scouter에서 내부적으로 관리하는 사용자의 아이디
+    - kbytes: 요청을 수락하고 종료할 떄까지 해당 스레드에서 사용한 메모리의 양
+    - group: scouter는 사용자의 요청을 묶어서 구분하는 그룹을 지정할 수 있다. 별도의 설정을 하지 않을 경우 대부분의 요청들은 하나의 그룹으로 관리된다.
+    - 프로파일링
+        - p#: 부모의 순번 (호출 연관 관계 확인)
+        - #: 현재 순번
+        - Time: 해당 프로파일링이 호출된 시간
+        - T-GAP: 위에 있는 프로파일링 결과와 현재 프로파일링 결과 사이의 시간 간격
+        - CPU: CPU 사용 시간
+        - CONTENT: 프로파일 내용
+
+<div align="center">
+    <img src="./images/XLog_Exam_1.PNG">
+</div>
+<br/>
+
+### 메서드 프로파일링 추가하기
+
+Scouter의 자바 에이전트 설정을 통해 메서드 프로파일링을 추가할 수 있다. 직접 설정 파일을 수정할 수도 있고, 클라이언트 GUI에서 에이전트 설정을 변경할 수도 있다.  
+
+<div align="center">
+    <img src="./images/Java_Agent_Setting.PNG">
+</div>
+<br/>
+
+ - 예제 설정
+    - hook_method_patterns 옵션에 '패키지명.클래스명.메서드명'을 지정해주면 해당 메서드의 시간을 분석할 수 있도록 프로파일링 결과에 표시해 준다.
+    - hook_* 옵션을 수정하고 적용하기 위해서는 애플리케이션을 재시작해주어야 한다. 실행 시점에 메서드에 필요한 분석 코드들을 넣기 때문이다.
+    - hook_method_patterns를 지정할 때 추천하는 패키지는 controller, service, dao를 추천한다.
+```conf
+trace_interservice_enabled=true
+obj_name=myTomcat1
+hook_method_patterns=org.mybatis.jpetstore.*.*.*
+
+# Activating protected Method hooking
+hook_method_access_protected_enabled=true
+# Activating none Method hooking
+hook_method_access_none_enabled=true
+
+# Prefix without Method hooking
+hook_method_ignore_prefixes=
+```
+
+### XLog 과거 데이터 불러오기
+
+그래프에서 마우스 우클릭 후 Load History를 클릭하면 과거 데이터를 확인할 수 있고, 그 외에도 통계 확인, 데이터 필터링 등을 할 수 있다.  
+ - XLog의 History 확인시 데이터가 없는 경우에는 데이터가 지워졌을 수 있다.
+    - scouter 수집 서버는 기본적으로 해당 서버에 장애가 발생하는 경우를 방지하기 위해 전체 디스크 사용량의 80%가 넘는 경우 자동으로 오래된 데이터를 지운다.
+
+<div align="center">
+    <img src="./images/XLog_Exam_2.PNG">
+</div>
+
+## 5. scouter 서버/에이전트 플러그인
+
+scouter는 각종 정보를 추가로 확인할 수 있는 플러그인들을 사용할 수 있도록 환경을 제공한다.  
+ - 플러그인 가이드 깃허브: https://github.com/scouter-project/scouter/blob/master/scouter.document/main/Plugin-Guide_kr.md
+ - 플러그인은 서버 플러그인과 에이전트 플러그인으로 나뉜다.
+
+### 서버 플러그인
+
+서버 플러그인은 scouter 수집 서버에 설치하여 사용하는 플러그인을 말한다. 서버 플러그인으로는 스크립팅 플러그인과 빌트인 플러그인으로 나뉜다.  
+스크립팅 플러그인은 데이터가 scouter 서버에 저장 되기 전에 호출되며, 운영 중인 상황에서도 스크립트를 변경 후 저장하면 바로 컴파일 후 반영된다. 빌트인 플러그인은 jar 파일을 통해 필요한 기능들을 추가할 수 있다.  
+
+ - 빌트인 플러그인
+    - alert 플러그인: email, telegram, slack, line, dingtalk
+    - counter 플러그인
+    - 플러그인 개발
+        - 깃허브 주소: https://github.com/scouter-project/scouter-plugin-server-null
+        - 플러그인을 개발할 때에는 null 플러그인의 코드를 복사하여 입맛에 맞게 수정하면 된다.
+ - 스크립팅 플러그인
+    - 스크립팅 플러그인은 scouter 서버의 plugin이라는 디렉토리에 만들어놓으면 자동으로 컴파일 하여 사용할 수 있는 상태가 된다. 스크립팅 플러그인들은 모두 전처리를 담당한다.
+        - agent.plug: 알림
+        - counter.plug: 성능 카운터 데이터
+        - object.plug: object 정보
+        - summary.plug: 성능 통계 정보
+        - xlog.plug: xlog 데이터
+        - xlogdb.plug: xlog 데이터 저장 직전 처리
+        - xlogprofile.plug: 상세 프로파일 정보
+
+### 에이전트 플러그인
+
+에이전트 플러그인은 scouter 에이전트에 지정해서 사용하는 플러그인을 말한다. 해당 플러그인은 해당 시점에 메서드로 넘어온 매개변수의 값을 확인하거나 리턴되는 값을 확인할 때 유용하다.  
+
+ - 플러그인 종류
+    - __httpservice.plug__
+        - WAS에 HTTP 요청이 들어오는 시점이나 나가는 시점
+    - __httpcall.plug__
+        - WAS에서 외부로 HttpClient를 사용하여 호출하는 시점
+    - __service.plug__
+        - 서비스의 시작/종료 시점에 데이터 확인
+        - hook_service_patterns으로 설정된 대상이 여기에 속한다.
+    - __capture.plug__
+        - 특정 클래스의 메서드가 호출되는 시점의 데이터 확인
+        - hook_args_patterns, hook_constructor_patterns로 설정된 대상이 여기에 속한다.
+        - jdbcpool.plug: DB 연결 요청 시점
+
+ - httpservice 플러그인
+    - httpservice 플러그인은 WAS에 HTTP를 사용한 요청이 들어왔을 때의 데이터를 확인하거나 필요한 작업을 수행할 경우에 사용된다.
+    - 해당 스크립트를 변경하면 저장하는 순간 해당 코드가 컴파일된다.
+    - ctx는 scouter의 프로파일링에 필요한 정보들을 얻거나 관련 정보들을 할당할 때 사용한다.
+```plug
+// agent.java/plugin/httpservice.plug 파일 내용
+
+// [start]
+// void start(WrContext $ctx, WrRequest $req, WrResponse $res)
+$ctx.profile("http plugin start");
+
+[end]
+// void end(WrContext $ctx, WrRequest $req, WrResponse $res)
+$ctx.profile("http plugin end");
+
+[reject]
+// boolean reject(WrContext $ctx, WrRequest $req, WrResponse $res)
+return false;
+```
+
+ - capture 플러그인
+    - httpservice 플러그인은 웹 기반의 서비스에서만 사용할 수 있다. 이를 보완하기 위해 일반적인 메서드의 매개변수와 리턴값을 별도로 확인할 수 있는 capture 플러그인이 있다.
+```conf
+# agent.java/conf/scouter.conf
+hook_constructor_patterns=a.B.B
+hook_args_patterns=a.B.c
+hook_return_patterns=a.B.c
+```
+
+## 6. scouter 사용 시 유용한 팁
+
+### 수집 서버의 디스크 사용량 안전하게 관리하기
+
+scouter 수집 서버를 기본값으로 사용할 경우 디스크 사용량이 80%가 될 대까지 지속해서 저장한다. 따라서, 저장되는 데이터를 관리하는 옵션을 알고 있으면 큰 도움이 된다.  
+
+ - 디스크가 80%를 사용하면 프로파일 데이터는 자동으로 지워진다.
+ - 프로파일 데이터는 10일이 지나면 자동으로 지워진다.
+ - xlog 점 데이터는 30일이 지나면 자동으로 지워진다.
+ - counter 데이터는 70일이 지나면 자동으로 지워진다.
+```conf
+# 저장소 자동 삭제 동작 여부
+mgr_purge_enabled=true
+
+# 프로파일 데이터를 자동으로 지우는 디스크 사용량(%)
+mgr_purge_disk_usage_pct=80
+
+# 프로파일 데이터가 자동으로 지워지기 전에 유지되는 날짜 수
+mgr_purge_profile_keep_days=10
+
+# xlog 점의 데이터가 자동으로 지워지기 전에 유지되는 날짜 수
+mgr_purge_xlog_keep_days=30
+
+# 각종 카운터가 자동으로 지워지기 전에 유지되는 날짜 수
+mgr_purge_counter_keep_days=70
+```
+
+### 알림 설정은 필수다
+
+scouter에서의 알림은 호스트 에이전트에서 발생할 수 있고, 수집 서버에 취합된 데이터를 바탕으로 발생시킬 수도 있다.  
+ - *_warning_pct, *_fatal_pct의 비율을 지정하고, *_alert_enabled 옵션을 지정해서 해당 알림을 직접 켜거나 끌 수 있다.
+    - 기본적으로 Alert 창이 뜨며, 메신저로 보내고 싶은 경우 각종 알림 플러그인을 활용한다.
+ - 커스텀 Alert
+    - 호스트 사용량 알림 외에도 커스텀 알림을 적용할 수 있다.
+    - Objects 창에서 수집 서버를 선택하고 우클릭 이후 Customizable Alert 를 지정하면 된다.
+    - 알림 플러그인 가이드: https://github.com/scouter-project/scouter/blob/master/scouter.document/main/Alert-Plugin-Guide_kr.md
+
+<div align="center">
+    <img src="./images/scouter_alert.PNG">
+</div>
+<br/>
+
+### 샘플링은 필수다
+
+모든 요청에 대한 프로파일링 정보를 저장할 경우 디스크를 많이 사용한다. 이러한 경우 샘플링을 이용하여 디스크 사용량을 줄일 수 있다.  
+scouter에서 샘플링을 사용하면 특정 비율만큼 프로파일링 정보들이 저장되고, TPS의 값은 문제없이 제공되며, XLog에 점이 전부 찍힌다.  
+ - 자바 에이전트의 설정 파일에 지정한다.
+ - 1단계: 0 ~ 100ms (3%)
+ - 2단계: 101 ~ 1000ms (10%)
+ - 3단계: 1001 ~ 3000ms (30%)
+ - 그 외: 3001 ~ (100%)
+```conf
+# 샘플링 사용 여부
+xlog_sampling_enabled=false
+
+# true: XLog에 점은 찍히지만, 프로파일링만 샘플링할지 여부
+# false: XLog의 점도 생략
+xlog_sampling_only_profile=false
+
+# 1단계 샘플링 기준 시간(0~지정시간)
+xlog_sampling_step1_ms=100
+
+# 1단계 샘플링 대상의 프로파일 저장 비율
+xlog_sampling_step1_rate_pct=3
+
+# 2단계 샘플링 기준 시간(1단계 시간~지정시간)
+xlog_sampling_step2_ms=1000
+
+# 2단계 샘플링 대상의 프로파일 저장 비율
+xlog_sampling_step2_rate_pct=10
+
+# 3단계 샘플링 기준 시간(2단계 시간~지정시간)
+xlog_sampling_step3_ms=3000
+
+# 3단계 샘플링 대상의 프로파일 저장 비율
+xlog_sampling_step3_rate_pct=30
+
+# 3단계보다 느린 대상의 프로파일 저장 비율
+XLog sampling over step3 percentage(%)
+xlog_sampling_over_rate_pct=100
+```
+
+### 메서드 프로파일링은 필수다
+
+scouter에는 기본적으로 메서드 프로파일링 옵션이 지정되어 있지 않다. 왜냐하면, 기본적으로 지정되어 있는 경우 수집 서버에 엄청난 양의 데이터가 쌓이게 되고, 실제 분석할 때 원하는 문제점을 찾기도 어려워진다.  
+ - hook_method_patterns
+    - 프로파일링을 하고자 하는 클래스의 메서드에 대해서 '패키지.클래스.메서드' 순으로 메서드 이름까지 지정한다.
+    - 클래스까지만 지정하면 프로파일링 되지 않는다. (모두 명시해주어야 함)
+```conf
+# a.b.c 패키지에 모든 클래스의 모든 메서드 프로파일링
+a.b.c.*.*
+
+# a.b.c 패키지에 Service로 끝나는 클래스에 대해서만 프로파일링
+a.b.c.*Service.*
+```
